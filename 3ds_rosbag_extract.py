@@ -1,75 +1,49 @@
 #!/usr/bin/env python
 
-import rosbag
+# import rosbag
 import numpy as np
 import teleop_utils as utils
-import ipdb
+from pathlib import Path
+from rosbags.highlevel import AnyReader
 
-# Open the rosbag file for reading
-config = utils.load_config()
-bag = rosbag.Bag(config['rosbag_file_path'])
+def extract(bagfile):
+    # Initializing lists to add data
+    pose_list = []
+    button1_list = []
+    button2_list = []
 
-# Access information about the bag (optional)
-print("Bag information:")
-print("Available Topics:", bag.get_type_and_topic_info().topics.keys())
+    # create reader instance and open for reading
+    with AnyReader([Path(bagfile)]) as reader:
+        connections = [x for x in reader.connections if x.topic == '/arm/measured_cp']
+        for connection, timestamp, rawdata in reader.messages(connections=connections):
+            msg = reader.deserialize(rawdata, connection.msgtype)
+            time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
+            pose = np.array([time, msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, 
+                            msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
+            pose_list.append(pose)
+        
+        connections = [x for x in reader.connections if x.topic == '/arm/button1']
+        for connection, timestamp, rawdata in reader.messages(connections=connections):
+            msg = reader.deserialize(rawdata, connection.msgtype)
+            time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
+            button1_list.append(np.array([time, msg.buttons[0]]))
 
+        connections = [x for x in reader.connections if x.topic == '/arm/button2']
+        for connection, timestamp, rawdata in reader.messages(connections=connections):
+            msg = reader.deserialize(rawdata, connection.msgtype)
+            time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
+            button2_list.append(np.array([time, msg.buttons[0]]))
 
-# Extract and Process the messages
-topic = '/arm/measured_cp'         # Change this str to the desired topic name
-messages = bag.read_messages(topics=[topic])
+    button1_array = np.array(button1_list)
+    button2_array = np.array(button2_list)
+    pose_array = np.array(pose_list)
 
-# Initializing lists to add data
-pose_list = []
-
-for topic,msg,t in messages:
-    # Get the times
-    time = t.to_sec()
+    filename = bagfile[:-4] + "_extracted.npz"   # Saves the data to a npz file of similar name
+    np.savez(filename, button1=button1_array, button2=button2_array, pose=pose_array)
+    return filename 
     
-    # Get the poses
-    pose = np.array([time, msg.pose.position.x, msg.pose.position.y, msg.pose.position.z, msg.pose.orientation.x, msg.pose.orientation.y, msg.pose.orientation.z, msg.pose.orientation.w])
-    pose_list.append(pose)
-
-
-# Extract and Process the messages
-topic = '/arm/button2'              # Change this str to the desired topic name
-messages = bag.read_messages(topics=[topic])
-
-# Initializing lists to add data
-button2_events = []
-
-for topic,msg,t in messages:
-    # Get the time
-    time = t.to_sec()
-    # Get the button status
-    button = msg.buttons[0]
-    
-    button2_events.append(np.array([time, button]))
-
-
-# Extract and Process the messages
-topic = '/arm/button1'              # Change this str to the desired topic name
-messages = bag.read_messages(topics=[topic])
-
-# Initializing lists to add data
-button1_events = []
-
-for topic,msg,t in messages:
-    # Get the time
-    time = t.to_sec()
-    # Get the button status
-    button = msg.buttons[0]
-    
-    button1_events.append(np.array([time, button]))
-
-
-# Close the bag when done
-bag.close()
-
-pose_array = np.array(pose_list)
-button1_clicks = np.array(button1_events)
-button2_clicks = np.array(button2_events)
-
-# Save the array to a npz file
-filename = "data.npz"       # Provide a filename must end with ".npz"
-
-np.savez(filename, button1 = button1_clicks, button2=button2_clicks, pose=pose_array)
+if __name__ == '__main__':
+    config = utils.load_config()
+    bagfile = config['rosbag_file_path']
+    x = extract(bagfile)
+    print("File Saved As: ", x)
