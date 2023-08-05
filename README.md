@@ -1,24 +1,6 @@
 # teleop_python_utils/README.md
 
-## 3ds_rosbag_extract.py
-
-To extract rostopic messages from a .bag file containing topics published by these [ROS drivers](https://github.com/jhu-saw/sawSensablePhantom) into a .npz file as NumPy Arrays.
-
-Sample bag files are provided in this repo. [data_saved](teleop_python_utils/data_saved)
-
-The .npz file will get saved in the location of your python environment.
-
-Edit `config/user_input1.cfg` to reflect the bagfile of interest: 
-
-```
-rosbag_file_name = 2023-06-29-13-18-02
-``` 
-
-To run the script, in your terminal:
-```Shell
-python 3ds_rosbag_extract.py user_input1
-```
-## Set up development environment
+### Set up development environment
 
 Python 3.10 is required, however, since it is no longer supported by 18.04, we need to build it from source.
 ```
@@ -43,3 +25,33 @@ Python 3.10 is required, however, since it is no longer supported by 18.04, we n
   python -m pip install rosbags
 
 ```
+
+### How to use this codebase
+#### 0. What to expect
+There are a few steps to compute the issued teleop commands based on raw user input data collected:
+1. ```3ds_rosbag_extract.py``` is used to extract user input data, from rosbag to numpy data files for better accessability.
+2. ```rel_pose_computation.py``` is used to compute teleoperation command using the numpy user input data
+#### 1. Create a configuration file under [/config](teleop_python_utils/config)
+To start, one need to make a copy of the example config file ```config/test1.cfg```, and edit it to reflect the user input rosbag file of interest: 
+
+```
+rosbag_file_name = 2023-06-29-13-18-02
+``` 
+
+
+#### 2. Run 3ds_rosbag_extract.py
+Run the following in a terminal:
+```Shell
+python 3ds_rosbag_extract.py test1
+```
+Then, ```test1_user_input_data.npz``` will be saved under [data_saved](teleop_python_utils/data_saved)
+
+**Explain**: we extract rostopic messages from a .bag file containing topics published by these [ROS drivers](https://github.com/jhu-saw/sawSensablePhantom) into a .npz file as NumPy Arrays. Sample bag files are provided in this repo. [data_saved](teleop_python_utils/data_saved)
+
+#### 3. Run rel_pose_computation.py
+Run the following in a terminal:
+```Shell
+python rel_pose_computation.py test1
+```
+Then, all issued teleop commands will be printed in the terminal.
+

@@ -5,15 +5,16 @@ import numpy as np
 import teleop_utils as utils
 from pathlib import Path
 from rosbags.highlevel import AnyReader
+import os
+import ipdb
 
-def extract(bagfile):
+def extract(config):
     # Initializing lists to add data
     pose_list = []
     button1_list = []
     button2_list = []
-
     # create reader instance and open for reading
-    with AnyReader([Path(bagfile)]) as reader:
+    with AnyReader([Path(config['user_input_rosbag'])]) as reader:
         connections = [x for x in reader.connections if x.topic == '/arm/measured_cp']
         for connection, timestamp, rawdata in reader.messages(connections=connections):
             msg = reader.deserialize(rawdata, connection.msgtype)
@@ -38,12 +39,10 @@ def extract(bagfile):
     button2_array = np.array(button2_list)
     pose_array = np.array(pose_list)
 
-    filename = bagfile[:-4] + "_extracted.npz"   # Saves the data to a npz file of similar name
-    np.savez(filename, button1=button1_array, button2=button2_array, pose=pose_array)
-    return filename 
+    np.savez(config['user_input_data'], button1=button1_array, button2=button2_array, pose=pose_array)
+    return config['user_input_data']
     
 if __name__ == '__main__':
     config = utils.load_config()
-    bagfile = config['rosbag_file_path']
-    x = extract(bagfile)
+    x = extract(config)
     print("File Saved As: ", x)

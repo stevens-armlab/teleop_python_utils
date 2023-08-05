@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import teleop_utils as utils
 
 def total_time(pose_array):
     """
@@ -78,14 +79,17 @@ if __name__ == '__main__':
     [time, x_position, y_position, z_position, x_orientation, y_orientation, z_orientation, w_orientation]
         
     """
-    data = np.load('data.npz')
+    config = utils.load_config()
+    data = np.load(config['user_input_data'])
 
-    button1 = data['button1']
-    button2 = data['button2']
+    button_not_used = data['button1']
+    button_enable = data['button2']
     pose = data['pose']
 
-    anchors = anchor_events(button2)
+    anchors = anchor_events(button_enable)
     fltr_poses = filter_poses_by_time(pose, anchors[0])
     
     traj = rel_pose_traj(fltr_poses) 
-    print(traj[0])
+    for idx, traj_i in enumerate(traj):
+        print(f'via point {idx}')
+        print(traj_i)
