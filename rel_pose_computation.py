@@ -2,6 +2,9 @@
 
 import numpy as np
 import teleop_utils as utils
+from spatialmath import *
+import matplotlib.pyplot as plt
+import ipdb
 
 def total_time(pose_array):
     """
@@ -22,46 +25,16 @@ def anchor_events(button):
             anchors.append([button[i,0], button[i+1,0]])
     return anchors
 
-def filter_poses_by_time(pose_array, time_range):
+def filter_poses_by_time(time_stamps, time_range, user_input_traj):
     # Find the indices where the time values in the poses array fall within the given range
-    mask = (pose_array[:, 0] >= time_range[0]) & (pose_array[:, 0] <= time_range[1])
-    return pose_array[mask]
+    index_within_range = np.where(
+        (time_stamps >= time_range[0]) & (time_stamps <= time_range[1]))
+    return user_input_traj[index_within_range[0],:,:]
    
-def quaternion_multiply(q1, q2):
-    """
-    Returns the quaternion multiplication of q1 * q2
-    """
-    x1, y1, z1, w1 = q1
-    x2, y2, z2, w2 = q2
-
-    x_res = w1 * x2 + x1 * w2 + y1 * z2 - z1 * y2
-    y_res = w1 * y2 - x1 * z2 + y1 * w2 + z1 * x2
-    z_res = w1 * z2 + x1 * y2 - y1 * x2 + z1 * w2
-    w_res = w1 * w2 - x1 * x2 - y1 * y2 - z1 * z2
-
-    return np.array([x_res, y_res, z_res, w_res])
-
-def rel_pose_traj(pose_array):
-    """
-    pose_array: an array of poses. Each pose has 8 elements.
-    [time, x_position, y_position, z_position, x_orientation, y_orientation, z_orientation, w_orientation]
-    
-    Returns a NumPy array of poses relative to the first element
-    """
+def rel_pose_traj(user_input_traj):
     # get an array of relative positions
-    i = 0
-    start_pose = pose_array[0]
-    start_orient_inv = np.array([-pose_array[0, 4], -pose_array[0, 5], -pose_array[0, 6], pose_array[0, 7]])
-    pose_list = []
-
-    while (i < len(pose_array)):
-        rel_pstn = pose_array[i,0:4] - start_pose[0:4]
-        rel_orient = quaternion_multiply(pose_array[i, 4:8], start_orient_inv)
-        rel_pose = np.hstack([rel_pstn, rel_orient])
-        pose_list.append(rel_pose)
-        i = i + 1
-
-    return np.array(pose_list)
+    start_pose = user_input_traj[0]
+    return SE3([start_pose.inv()*pose for pose in user_input_traj])
 
 if __name__ == '__main__':
     """ 
@@ -75,21 +48,77 @@ if __name__ == '__main__':
                 .      
         [time_n event_n]    ]
 
-    pose:
+    pose_msg:
     [time, x_position, y_position, z_position, x_orientation, y_orientation, z_orientation, w_orientation]
-        
+    
+    user_input_traj:
+    [   [SE3() at time_0]
+        [SE3() at time_1]
+        [SE3() at time_2]
+            .
+            .
+            .
+        [SE3() at time_n]
+
     """
     config = utils.load_config()
     data = np.load(config['user_input_data'])
 
     button_not_used = data['button1']
     button_enable = data['button2']
-    pose = data['pose']
+    pose_msg = data['pose_msg']
+    user_input_traj = data['user_input_traj']
 
     anchors = anchor_events(button_enable)
-    fltr_poses = filter_poses_by_time(pose, anchors[0])
-    
-    traj = rel_pose_traj(fltr_poses) 
-    for idx, traj_i in enumerate(traj):
+    selected_anchor_range = anchors[0]
+    total_time = selected_anchor_range[1] - selected_anchor_range[0]
+
+    user_input_traj_fltr = filter_poses_by_time(
+        time_stamps = pose_msg[:,0], time_range = selected_anchor_range, user_input_traj = user_input_traj)
+
+    user_input_traj_fltr = SE3(
+        [SE3(user_input_traj_fltr[i,:,:]) for i in range(user_input_traj_fltr.shape[0])]
+        ) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
+
+    rel_traj = rel_pose_traj(user_input_traj_fltr) 
+
+    for idx, pose_i in enumerate(rel_traj):
         print(f'via point {idx}')
-        print(traj_i)
+        print(pose_i)
+
+    # Animation 1: User Input
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plt.title('User Input Traj')
+    user_input_traj_fltr[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    user_input_traj_fltr.animate(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    plt.show(block=False)
+    input('Animation displayed')
+
+    # Animation 2: User Input (Relative)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    plt.title('User Input Traj (Relative)')
+    rel_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    rel_traj.animate(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+
+    plt.show(block=False)
+    input('Animation displayed (Relative)')
+
+    # Comparison: User Input vs. Relative
+    time_to_view = float(input(
+        f'Total time = {total_time}, select a time view: '))
+    index_to_view = int (time_to_view/total_time*len(rel_traj))
+    fig = plt.figure()
+    ax = fig.add_subplot(121, projection='3d')
+    user_input_traj_fltr[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    user_input_traj_fltr[index_to_view].plot(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    plt.title('User Input Traj')
+    
+    ax = fig.add_subplot(122, projection='3d')
+    rel_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    rel_traj[index_to_view].plot(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    plt.title('User Input Traj (Relative)')
+
+    plt.show(block=False)
+    input('User Input Traj displayed')
