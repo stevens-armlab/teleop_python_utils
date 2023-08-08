@@ -29,12 +29,14 @@ def filter_poses_by_time(time_stamps, time_range, user_input_traj):
     # Find the indices where the time values in the poses array fall within the given range
     index_within_range = np.where(
         (time_stamps >= time_range[0]) & (time_stamps <= time_range[1]))
-    return user_input_traj[index_within_range[0],:,:]
+    relative_time = time_stamps[index_within_range[0]] - time_stamps[index_within_range[0][0]]
+    return (user_input_traj[index_within_range[0],:,:],relative_time)
    
 def rel_pose_traj(user_input_traj):
     # get an array of relative positions
     start_pose = user_input_traj[0]
     return SE3([start_pose.inv()*pose for pose in user_input_traj])
+
 
 if __name__ == '__main__':
     """ 
@@ -73,18 +75,32 @@ if __name__ == '__main__':
     selected_anchor_range = anchors[0]
     total_time = selected_anchor_range[1] - selected_anchor_range[0]
 
-    user_input_traj_fltr = filter_poses_by_time(
+    (user_input_traj_fltr, rel_time) = filter_poses_by_time(
         time_stamps = pose_msg[:,0], time_range = selected_anchor_range, user_input_traj = user_input_traj)
 
-    user_input_traj_fltr = SE3(
-        [SE3(user_input_traj_fltr[i,:,:]) for i in range(user_input_traj_fltr.shape[0])]
-        ) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
+
+
+    user_input_traj_fltr = utils.ndarray_to_se3(user_input_traj_fltr) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
 
     rel_traj = rel_pose_traj(user_input_traj_fltr) 
 
     for idx, pose_i in enumerate(rel_traj):
         print(f'via point {idx}')
         print(pose_i)
+
+    # save everything
+    np.savez(config['user_input_data'],
+            # original data already loaded 
+            button1=data['button1'], 
+            button2=data['button2'], 
+            pose_msg=data['pose_msg'], 
+            user_input_traj=data['user_input_traj'], 
+            # commanded trajectories processed
+            command_abs_traj=utils.se3_to_ndarray(user_input_traj_fltr),
+            command_rel_traj=utils.se3_to_ndarray(rel_traj),
+            command_time=np.array(rel_time),
+            )
+    print("File Saved As: ", config['user_input_data'])
 
     # Animation 1: User Input
     fig = plt.figure()

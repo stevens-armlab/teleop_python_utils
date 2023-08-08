@@ -44,18 +44,13 @@ def extract(config):
             time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
             button2_list.append(np.array([time, msg.buttons[0]]))
 
-    button1_msg_array = np.array(button1_list)
-    button2_msg_array = np.array(button2_list)
-    pose_msg_array = np.array(pose_msg_list)
-
     np.savez(config['user_input_data'], 
-             button1=button1_msg_array, 
-             button2=button2_msg_array, 
-             pose_msg=pose_msg_array, 
-             user_input_traj=user_input_traj)
-    return config['user_input_data']
+             button1=np.array(button1_list), 
+             button2=np.array(button2_list), 
+             pose_msg=np.array(pose_msg_list),
+             user_input_traj=utils.se3_to_ndarray(SE3(user_input_traj)))
+    print("File Saved As: ", config['user_input_data']) 
     
 if __name__ == '__main__':
     config = utils.load_config()
-    x = extract(config)
-    print("File Saved As: ", x)
+    extract(config)

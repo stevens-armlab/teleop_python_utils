@@ -3,7 +3,8 @@
 import os
 import sys
 import configparser
-
+import numpy as np
+from spatialmath import *
 import ipdb
 
 def load_config():
@@ -23,3 +24,9 @@ def load_config():
         'teleop_command_data': teleop_command_data_path,
     }
     return config_data
+
+def ndarray_to_se3(nd_array: np.ndarray):
+    return SE3([SE3(nd_array[i,:,:]) for i in range(nd_array.shape[0])])
+
+def se3_to_ndarray(se3_array: SE3):
+    return np.array([np.array(x) for x in se3_array])
