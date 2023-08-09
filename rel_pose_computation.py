@@ -82,7 +82,7 @@ if __name__ == '__main__':
 
     user_input_traj_fltr = utils.ndarray_to_se3(user_input_traj_fltr) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
 
-    rel_traj = rel_pose_traj(user_input_traj_fltr) 
+    rel_traj = rel_pose_traj(user_input_traj_fltr)
 
     for idx, pose_i in enumerate(rel_traj):
         print(f'via point {idx}')
@@ -103,38 +103,21 @@ if __name__ == '__main__':
     print("File Saved As: ", config['user_input_data'])
 
     # Animation 1: User Input
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plt.title('User Input Traj')
-    user_input_traj_fltr[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    user_input_traj_fltr.animate(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    plt.show(block=False)
-    input('Animation displayed')
+    utils.animate_user_input(user_input_traj=user_input_traj_fltr, plt_title='User Input Traj')
 
     # Animation 2: User Input (Relative)
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-    plt.title('User Input Traj (Relative)')
-    rel_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    rel_traj.animate(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-
-    plt.show(block=False)
-    input('Animation displayed (Relative)')
+    utils.animate_user_input(user_input_traj=rel_traj, plt_title='User Input Traj (Relative)')
 
     # Comparison: User Input vs. Relative
-    time_to_view = float(input(
-        f'Total time = {total_time}, select a time view: '))
-    index_to_view = int (time_to_view/total_time*len(rel_traj))
-    fig = plt.figure()
-    ax = fig.add_subplot(121, projection='3d')
-    user_input_traj_fltr[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    user_input_traj_fltr[index_to_view].plot(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    plt.title('User Input Traj')
-    
-    ax = fig.add_subplot(122, projection='3d')
-    rel_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    rel_traj[index_to_view].plot(frame='i', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
-    plt.title('User Input Traj (Relative)')
+    time_to_view = 1.0
+    while time_to_view>0:
+        time_to_view = float(input(
+            f'Total time = {total_time}, select a time view (or negative time to quit): '))
+        if time_to_view>=total_time:
+            time_to_view = total_time
+        if time_to_view > 0:
+            index_to_view = int (time_to_view/total_time*len(rel_traj))
+            utils.plot_user_input_pose(index = index_to_view,abs_traj=user_input_traj_fltr,rel_traj=rel_traj)
 
-    plt.show(block=False)
-    input('User Input Traj displayed')
+    # Comparison: Trajectory vs. Relative
+    utils.plot_user_input_traj(abs_traj=user_input_traj_fltr,rel_traj=rel_traj)
