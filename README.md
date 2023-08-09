@@ -32,7 +32,7 @@ There are a few steps to compute the issued teleop commands based on raw user in
 1. ```3ds_rosbag_extract.py``` is used to extract user input data, from rosbag to numpy data files for better accessability.
 2. ```rel_pose_computation.py``` is used to compute teleoperation command using the numpy user input data
 #### 1. Create a configuration file under [/config](teleop_python_utils/config)
-To start, one need to make a copy of the example config file ```config/test1.cfg```, and edit it to reflect the user input rosbag file of interest: 
+To start, one need to make a copy of the example config file ```config/traj1.cfg```, and edit it to reflect the user input rosbag file of interest: 
 
 ```
 rosbag_file_name = 2023-06-29-13-18-02
@@ -42,16 +42,16 @@ rosbag_file_name = 2023-06-29-13-18-02
 #### 2. Run 3ds_rosbag_extract.py
 Run the following in a terminal:
 ```Shell
-python 3ds_rosbag_extract.py test1
+python 3ds_rosbag_extract.py traj1
 ```
-Then, ```test1_user_input_data.npz``` will be saved under [data_saved](teleop_python_utils/data_saved)
+Then, ```traj1_user_input_data.npz``` will be saved under [data_saved](teleop_python_utils/data_saved)
 
 **Explain**: we extract rostopic messages from a .bag file containing topics published by these [ROS drivers](https://github.com/jhu-saw/sawSensablePhantom) into a .npz file as NumPy Arrays. Sample bag files are provided in this repo. [data_saved](teleop_python_utils/data_saved)
 
 #### 3. Run rel_pose_computation.py
 Run the following in a terminal:
 ```Shell
-python rel_pose_computation.py test1
+python rel_pose_computation.py traj1
 ```
 Then, all issued teleop commands will be printed in the terminal.
 
