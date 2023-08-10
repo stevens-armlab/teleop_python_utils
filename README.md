@@ -32,12 +32,21 @@ There are a few steps to compute the issued teleop commands based on raw user in
 1. ```3ds_rosbag_extract.py``` is used to extract user input data, from rosbag to numpy data files for better accessability.
 2. ```rel_pose_computation.py``` is used to compute teleoperation command using the numpy user input data
 #### 1. Create a configuration file under [/config](teleop_python_utils/config)
-To start, one need to make a copy of the example config file ```config/traj1.cfg```, and edit it to reflect the user input rosbag file of interest: 
+To start, one need to make a copy of the example config file ```config/traj1.cfg```, and edit it to reflect:
 
-```
-rosbag_file_name = 2023-06-29-13-18-02
-``` 
-
+1. The user input rosbag file of interest: 
+    ```
+    rosbag_file_name = 2023-06-29-13-18-02
+    ``` 
+2. The scaling factor for teleoperation:
+    ```
+    scaling_factor = 1
+    ```
+3. The world rotation matrix (defines the viewers perspective) :
+    ```
+    world_rot_mat = [[1,0,0],[0,1,0],[0,0,1]]
+    ```
+    Note: If the world rotation matrix is invalid, it will default to the identity matrix
 
 #### 2. Run 3ds_rosbag_extract.py
 Run the following in a terminal:

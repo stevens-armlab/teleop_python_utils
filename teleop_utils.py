@@ -6,7 +6,7 @@ import configparser
 import numpy as np
 from spatialmath import *
 import matplotlib.pyplot as plt
-
+import ast
 import ipdb
 
 def load_config():
@@ -18,12 +18,21 @@ def load_config():
     rosbag_file_path = os.path.join('data_saved',config['General']['user_input_rosbag']+'.bag')
     user_input_data_path = os.path.join('data_saved',config_file_name+'_user_input_data.npz')
     teleop_command_data_path = os.path.join('data_saved',config_file_name+'_teleop_command_data.npz')
+    # get the viewer perspective frames 
+    sf = ast.literal_eval(config['General']['scaling_factor'])
+    rot = ast.literal_eval(config['General']['world_rot_mat'])
+    try:    # Returns identity SE(3) if the user input rotation is invalid
+        origin = SE3(SO3(np.array([np.array(i) for i in rot])))
+    except:
+        origin = SE3(SO3())
     # output
     config_data = {
         'name':config_file_name,
         'user_input_rosbag': rosbag_file_path,
         'user_input_data': user_input_data_path,
         'teleop_command_data': teleop_command_data_path,
+        'world_origin': origin,
+        'scaling_factor': sf,
     }
     return config_data
 
