@@ -14,10 +14,12 @@ def load_config():
     config_file_path = os.path.join('config',config_file_name+'.cfg')
     config = configparser.ConfigParser()
     config.read(config_file_path)
+    
     # file paths
     rosbag_file_path = os.path.join('data_saved',config['General']['user_input_rosbag']+'.bag')
     user_input_data_path = os.path.join('data_saved',config_file_name+'_user_input_data.npz')
     teleop_command_data_path = os.path.join('data_saved',config_file_name+'_teleop_command_data.npz')
+    
     # get the viewer perspective frames 
     sf = ast.literal_eval(config['General']['scaling_factor'])
     rot = ast.literal_eval(config['General']['world_rot_mat'])
@@ -25,6 +27,10 @@ def load_config():
         origin = SE3(SO3(np.array([np.array(i) for i in rot])))
     except:
         origin = SE3(SO3())
+
+    # Get the robot home joint state
+    q_home = np.radians(np.array(ast.literal_eval(config['General']['joint_states_home'])))
+
     # output
     config_data = {
         'name':config_file_name,
@@ -33,6 +39,7 @@ def load_config():
         'teleop_command_data': teleop_command_data_path,
         'world_origin': origin,
         'scaling_factor': sf,
+        'UR5_home': q_home,
     }
     return config_data
 
