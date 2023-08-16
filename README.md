@@ -27,6 +27,9 @@ Python 3.10 is required, however, since it is no longer supported by 18.04, we n
 ```
 
 ### How to use this codebase
+#### 0. Collect the data
+The raw data of 3ds Touch hatpic device can be collected by following https://github.com/jhu-cisst-external/3ds-touch-openhaptics
+
 #### 0. What to expect
 There are a few steps to compute the issued teleop commands based on raw user input data collected:
 1. ```3ds_rosbag_extract.py``` is used to extract user input data, from rosbag to numpy data files for better accessability.
