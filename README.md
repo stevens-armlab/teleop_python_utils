@@ -31,6 +31,8 @@ Python 3.10 is required, however, since it is no longer supported by 18.04, we n
 There are a few steps to compute the issued teleop commands based on raw user input data collected:
 1. ```3ds_rosbag_extract.py``` is used to extract user input data, from rosbag to numpy data files for better accessability.
 2. ```rel_pose_computation.py``` is used to compute teleoperation command using the numpy user input data
+3. ```pose_traj_sim.py``` is used to generate a joint-space trajectory based on a resolved-rates algorithm, and to visualize the motion of a UR5 robot
+
 #### 1. Create a configuration file under [/config](teleop_python_utils/config)
 To start, one need to make a copy of the example config file ```config/traj1.cfg```, and edit it to reflect:
 
@@ -47,6 +49,10 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
     world_rot_mat = [[1,0,0],[0,1,0],[0,0,1]]
     ```
     Note: If the world rotation matrix is invalid, it will default to the identity matrix
+4. The UR5 robot home pose (joint angles in degrees):
+    ```
+    joint_states_home = [0, 90, -90, 0, 0, 0]
+    ```
 
 #### 2. Run 3ds_rosbag_extract.py
 Run the following in a terminal:
@@ -64,3 +70,10 @@ python rel_pose_computation.py traj1
 ```
 Then, all issued teleop commands will be printed in the terminal.
 
+#### 4. Run pose_traj_sim.py
+Run the following in a terminal:
+```Shell
+python pose_traj_sim.py traj1
+```
+Then, the script will generate a window where the robot motion is displayed. Wait for the window to close itself, for the animation file to be generated.
+The animation will be saved as ```UR5_traj1.gif```

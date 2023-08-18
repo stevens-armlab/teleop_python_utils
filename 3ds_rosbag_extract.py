@@ -35,14 +35,20 @@ def extract(config):
         connections = [x for x in reader.connections if x.topic == '/arm/button1']
         for connection, timestamp, rawdata in reader.messages(connections=connections):
             msg = reader.deserialize(rawdata, connection.msgtype)
-            time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
-            button1_list.append(np.array([time, msg.buttons[0]]))
+            try:
+                time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
+                button1_list.append(np.array([time, msg.buttons[0]]))
+            except:
+                button1_list.append(np.array([0, 0]))
 
         connections = [x for x in reader.connections if x.topic == '/arm/button2']
         for connection, timestamp, rawdata in reader.messages(connections=connections):
             msg = reader.deserialize(rawdata, connection.msgtype)
-            time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
-            button2_list.append(np.array([time, msg.buttons[0]]))
+            try:
+                time = msg.header.stamp.sec + (msg.header.stamp.nanosec / 1000000000)
+                button2_list.append(np.array([time, msg.buttons[0]]))
+            except:
+                button2_list.append(np.array([0, 0]))
 
     np.savez(config['user_input_data'], 
              button1=np.array(button1_list), 

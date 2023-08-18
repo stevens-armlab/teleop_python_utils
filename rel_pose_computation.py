@@ -21,7 +21,7 @@ def anchor_events(button):
     """
     anchors = []
     for i in range(len(button) - 1):
-        if i % 2 == 1:
+        if (button[i,1] == 1):
             anchors.append([button[i,0], button[i+1,0]])
     return anchors
 
