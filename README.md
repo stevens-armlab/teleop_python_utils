@@ -48,11 +48,21 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
     ```
     scaling_factor = 1
     ```
-3. The world rotation matrix (defines the viewers perspective) :
+3. Set the rotations between viewer and hardware :
     ```
-    world_rot_mat = [[1,0,0],[0,1,0],[0,0,1]]
+    haptic_to_viewer = [
+        [1,0,0],
+        [0,0,-1],
+        [0,1,0]
+        ]
+    viewer_to_robotbase = [
+        [1,0,0],
+        [0,1,0],
+        [0,0,1]
+        ]
     ```
-    Note: If the world rotation matrix is invalid, it will default to the identity matrix
+    Note: If a rotation matrix is invalid, it will default to the identity matrix
+    
 4. The UR5 robot home pose (joint angles in degrees):
     ```
     joint_states_home = [0, -60, 120, -150, -90, 0]

@@ -4,6 +4,7 @@ import numpy as np
 import teleop_utils as utils
 from spatialmath import *
 import matplotlib.pyplot as plt
+import roboticstoolbox as rtb
 import ipdb
 
 def total_time(pose_array):
@@ -37,6 +38,26 @@ def rel_pose_traj(user_input_traj):
     start_pose = user_input_traj[0]
     return SE3([start_pose.inv()*pose for pose in user_input_traj])
 
+def get_desired_poses(cmd_traj, home_pose, sf, haptic_to_viewer, viewer_to_robotbase):
+    """
+    Returns the desired robot poses from the commanded trajectory as an ndarray
+
+    Parameters:
+    cmd_traj = relative trajectory input SE3 type
+    home_pose = starting pose of robot SE3 type
+    sf = scaling factor for teleoperation
+    haptic_to_viewer = transformation matrix SE3 type
+    viewer_to_robotbase = transformation matrix SE3 type
+    """
+    des_poses = []
+    for pose in cmd_traj:
+        vec = np.array([home_pose.t + (viewer_to_robotbase.R.T @ haptic_to_viewer.R @ (sf * pose.t))])
+        mat = pose.R @ home_pose.R
+        mat = np.concatenate((mat, vec.T), axis = 1)
+        mat = np.concatenate((mat, np.array([np.array([0, 0, 0, 1])])),axis = 0)
+        des_poses.append(SE3(mat))
+
+    return utils.se3_to_ndarray(SE3(des_poses))
 
 if __name__ == '__main__':
     """ 
@@ -84,10 +105,18 @@ if __name__ == '__main__':
 
     rel_traj = rel_pose_traj(user_input_traj_fltr)
 
-    for idx, pose_i in enumerate(rel_traj):
-        print(f'via point {idx}')
-        print(pose_i)
-
+    robot = rtb.models.UR5()
+    q_home = config['UR5_home']
+    # Set the start pose as desired. Can use qr,qn,q1,etc
+    T_home = robot.fkine(q_home)
+    robot_traj = get_desired_poses( 
+                                    cmd_traj=rel_traj, 
+                                    home_pose=T_home,
+                                    sf=config['scaling_factor'], 
+                                    haptic_to_viewer=config['haptic_to_viewer'], 
+                                    viewer_to_robotbase=config['viewer_to_robotbase']
+                                    )
+    
     # save everything
     np.savez(config['user_input_data'],
             # original data already loaded 
@@ -99,9 +128,10 @@ if __name__ == '__main__':
             command_abs_traj=utils.se3_to_ndarray(user_input_traj_fltr),
             command_rel_traj=utils.se3_to_ndarray(rel_traj),
             command_time=np.array(rel_time),
+            robot_pose_traj=robot_traj,
             )
     print("File Saved As: ", config['user_input_data'])
-
+    
     # Animation 1: User Input
     utils.animate_user_input(user_input_traj=user_input_traj_fltr, plt_title='User Input Traj')
 

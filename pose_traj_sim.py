@@ -11,36 +11,17 @@ import yaml
 
 # Load the robot model
 robot = rtb.models.UR5()
-haptic_to_viewer = []
-viewer_to_haptic = np.array([np.array([1,0,0]),np.array([0,0,-1]),np.array([0,1,0])])
 
-def get_desired_poses(cmd_traj, home_pose, sf):
-    """
-    Returns the desired robot poses from the commanded trajectory
-    cmd_traj = relative trajectory input
-    home_pose = starting pose of robot
-    sf = scaling factor for teleoperation
-    """
-    des_poses = []
-    for pose in cmd_traj:
-        vec = np.array([home_pose.t + (viewer_to_haptic @ (sf * pose.t))])
-        mat = pose.R @ home_pose.R
-        mat = np.concatenate((mat, vec.T), axis = 1)
-        mat = np.concatenate((mat, np.array([np.array([0, 0, 0, 1])])),axis = 0)
-        des_poses.append(SE3(mat))
-
-    return SE3(des_poses)
+# Resolved Rate parameters
+v_min, v_max, w_min, w_max, lmda, dt = 0.1, 1, 15, 100, 5, 0.001
+# Error convergence parameters
+e_p, e_o = 0.001, 0.0524
 
 def get_velocity(position_error, position_error_norm, orientation_axis, orientation_error):
     """
     Returns the task-space velocity vector
     based on the resolved rate parameters set below
     """
-    # Resolved Rate parameters
-    v_min, v_max, w_min, w_max, lmda = 0.1, 1, 15, 100, 5
-    # Error convergence parameters
-    e_p, e_o = 0.001, 0.0524
-    
     if (position_error_norm/e_p) > lmda:
         v = v_max
     else:
@@ -68,9 +49,7 @@ def resolved_rate_joint_traj(traj, q_start):
     """
     Returns a trajectory of joint_state positions
     """
-    # Error convergence parameters
-    e_p, e_o = 0.001, 0.0524
-    dt, i = 0.001, 0
+    i = 0
     step = 0
 
     q_curr = q_start
@@ -147,13 +126,11 @@ if __name__ == '__main__':
     cmd_time = data['command_time'] # {timestamps}
     q_home = config['UR5_home']
 
-    # Set the start pose as desired. Can use qr,qn,q1,etc
-    T_home = robot.fkine(q_home)
-
-    robot_traj = get_desired_poses(cmd_traj=cmd_traj, home_pose=T_home, sf=config['scaling_factor'])
+    robot_traj = utils.ndarray_to_se3(data['robot_pose_traj'])
     joint_traj = resolved_rate_joint_traj(robot_traj, q_home)
 
     gif_path = 'data_saved/UR5_' + config['name'] + '.gif'
+    
     # The below method generates an animation
     robot.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
 
@@ -167,7 +144,8 @@ if __name__ == '__main__':
             command_abs_traj=data['command_abs_traj'],
             command_rel_traj=data['command_rel_traj'],
             command_time=data['command_time'],
-            # commanded trajectories processed
+            robot_pose_traj=data['robot_pose_traj'],
+            # robot joint trajectory processed
             robot_joint_traj=joint_traj,
             )
     print("File Saved As: ", config['user_input_data'])
