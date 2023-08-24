@@ -7,6 +7,7 @@ import roboticstoolbox as rtb
 import ipdb
 from spatialmath import SE3
 from scipy.spatial.transform import Rotation as R
+import yaml
 
 # Load the robot model
 robot = rtb.models.UR5()
@@ -22,7 +23,7 @@ def get_desired_poses(cmd_traj, home_pose, sf):
     """
     des_poses = []
     for pose in cmd_traj:
-        vec = np.array([home_pose.t + (viewer_to_haptic (sf * pose.t))])
+        vec = np.array([home_pose.t + (viewer_to_haptic @ (sf * pose.t))])
         mat = pose.R @ home_pose.R
         mat = np.concatenate((mat, vec.T), axis = 1)
         mat = np.concatenate((mat, np.array([np.array([0, 0, 0, 1])])),axis = 0)
@@ -123,6 +124,20 @@ def resolved_rate_joint_traj(traj, q_start):
         i += 1
     return np.array(joint_state_traj)
 
+def create_yaml(data_to_convert, file_name):
+    # Convert the parent ndarray and nested ndarrays to the desired format for YAML
+    yaml_data = []
+    for idx, sublist in enumerate(data_to_convert):
+        yaml_data.append({ 
+            'Joint_Positions': sublist.tolist(),
+            'traj_point': idx,
+        })
+
+    # Write the data to the YAML file
+    with open(file_name, 'w') as yaml_file:
+        yaml.dump(yaml_data, yaml_file, default_flow_style=False)
+    print('joint state trajectory saved as: ', file_name)
+
 if __name__ == '__main__':
     # Load the command data { waypoints, timestamps }
     config = utils.load_config()
@@ -156,3 +171,6 @@ if __name__ == '__main__':
             robot_joint_traj=joint_traj,
             )
     print("File Saved As: ", config['user_input_data'])
+
+    # Creates yaml configuration file to use with ROS
+    create_yaml(joint_traj, config['yaml_file_path'])

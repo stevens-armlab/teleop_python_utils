@@ -19,6 +19,7 @@ def load_config():
     rosbag_file_path = os.path.join('data_saved',config['General']['user_input_rosbag']+'.bag')
     user_input_data_path = os.path.join('data_saved',config_file_name+'_user_input_data.npz')
     teleop_command_data_path = os.path.join('data_saved',config_file_name+'_teleop_command_data.npz')
+    yaml_file_path = os.path.join('data_saved',config_file_name+'.yaml')
     
     # get the viewer perspective frames 
     sf = ast.literal_eval(config['General']['scaling_factor'])
@@ -40,6 +41,7 @@ def load_config():
         'world_origin': origin,
         'scaling_factor': sf,
         'UR5_home': q_home,
+        'yaml_file_path': yaml_file_path,
     }
     return config_data
 

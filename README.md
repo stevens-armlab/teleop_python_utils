@@ -23,6 +23,7 @@ Python 3.10 is required, however, since it is no longer supported by 18.04, we n
   python -m pip install pyqt5 # Must install GUI backend for plotting
   python -m pip install ipdb
   python -m pip install rosbags
+  python -m pip install pyyaml  # Must install to use ROS for viewing saved command in Gazebo simulated UR5
 
 ```
 
@@ -77,3 +78,5 @@ python pose_traj_sim.py traj1
 ```
 Then, the script will generate a window where the robot motion is displayed. Wait for the window to close itself, for the animation file to be generated.
 The animation will be saved as ```UR5_traj1.gif```
+
+Then, ```traj1.yaml``` will be saved under [data_saved](teleop_python_utils/data_saved), which can be used to load the generated joint state trajectory to a ROS Node as demonstrated [here](https://github.com/stevens-armlab/teleop_core).
