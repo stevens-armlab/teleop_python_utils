@@ -23,7 +23,7 @@ Python 3.10 is required, however, since it is no longer supported by 18.04, we n
   python -m pip install pyqt5 # Must install GUI backend for plotting
   python -m pip install ipdb
   python -m pip install rosbags
-  python -m pip install pyyaml  # Must install to use ROS for viewing saved command in Gazebo simulated UR5
+  python -m pip install pyyaml  # Must install to for saving .yaml file
 
 ```
 
@@ -52,7 +52,7 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
     Note: If the world rotation matrix is invalid, it will default to the identity matrix
 4. The UR5 robot home pose (joint angles in degrees):
     ```
-    joint_states_home = [0, 90, -90, 0, 0, 0]
+    joint_states_home = [0, -60, 120, -150, -90, 0]
     ```
 
 #### 2. Run 3ds_rosbag_extract.py
