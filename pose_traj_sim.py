@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import numpy as np
-import matplotlib.pyplot as plt
 import teleop_utils as utils
 import roboticstoolbox as rtb
 import ipdb
@@ -9,28 +8,49 @@ from spatialmath import SE3
 from scipy.spatial.transform import Rotation as R
 import yaml
 
-# Load the robot model
-robot = rtb.models.UR5()
+# LOAD THE ROBOT MODEL
+ROBOT = rtb.models.UR5()
 
-# Resolved Rate parameters
-v_min, v_max, w_min, w_max, lmda, dt = 0.1, 1, 15, 100, 5, 0.001
-# Error convergence parameters
-e_p, e_o = 0.001, 0.0524
+# RESOLVED RATE PARAMETERS
+V_MIN, V_MAX, W_MIN, W_MAX, LMDA, DT = 0.1, 1, 15, 100, 5, 0.001
+# ERROR CONVERGENCE PARAMETERS
+E_P, E_O = 0.001, 0.0524
+
+def get_desired_poses(cmd_traj, home_pose, sf, haptic_to_viewer, viewer_to_robotbase):
+    """
+    Returns the desired robot poses from the commanded trajectory as an ndarray
+
+    Parameters:
+    cmd_traj = ndarray type relative trajectory input wrt Haptic Base frame
+    home_pose = SE3 type starting pose of robot wrt Robot Base frame
+    sf = scaling factor for teleoperation
+    haptic_to_viewer = SE3 type pose/transformation of the viewer frame with reference to the haptic frame
+    viewer_to_robotbase = SE3 type pose/transformation of the Robot Base frame with reference to the viewer frame
+    """
+    # The haptic frame with reference to the robot base frame
+    robotbase_to_haptic = viewer_to_robotbase.inv() * haptic_to_viewer.inv()
+    # scaling applied to cartesian positions
+    cmd_traj[:,0:3,3] *= sf
+
+    # calculate desired robot poses wrt the robot base frame
+    des_poses = [(robotbase_to_haptic * pose * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
+    
+    return utils.se3_to_ndarray(SE3(des_poses))
 
 def get_velocity(position_error, position_error_norm, orientation_axis, orientation_error):
     """
     Returns the task-space velocity vector
     based on the resolved rate parameters set below
     """
-    if (position_error_norm/e_p) > lmda:
-        v = v_max
+    if (position_error_norm/E_P) > LMDA:
+        v = V_MAX
     else:
-        v = v_min + ((v_max - v_min) * (position_error_norm - e_p) / (e_p * (lmda - 1)))
+        v = V_MIN + ((V_MAX - V_MIN) * (position_error_norm - E_P) / (E_P * (LMDA - 1)))
 
-    if (orientation_error/e_o) > lmda:
-        w = w_max
+    if (orientation_error/E_O) > LMDA:
+        w = W_MAX
     else:
-        w = w_min + ((w_max - w_min) * (orientation_error - e_o) / (e_o * (lmda - 1)))
+        w = W_MIN + ((W_MAX - W_MIN) * (orientation_error - E_O) / (E_O * (LMDA - 1)))
 
     p_dot = position_error * (v / position_error_norm)
     o_dot = w * orientation_axis
@@ -42,7 +62,7 @@ def robust_inv(joint_state):
     Returns the singularity robust inverse jacobian of the robot
     {With respect to robot base frame}
     """
-    jacobian = robot.jacob0(joint_state) # Jacobian wrt robot base frame
+    jacobian = ROBOT.jacob0(joint_state) # Jacobian wrt robot base frame
     return jacobian.T @ np.linalg.inv((jacobian @ jacobian.T) + (0.00001 * np.identity(6)))
 
 def resolved_rate_joint_traj(traj, q_start):
@@ -51,14 +71,14 @@ def resolved_rate_joint_traj(traj, q_start):
     """
     i = 0
     step = 0
-
+    traj = utils.ndarray_to_se3(traj)
     q_curr = q_start
     joint_state_traj = []
     joint_state_traj.append(q_curr)
 
     while i < len(traj):
 
-        cur_pose = robot.fkine(q_curr)
+        cur_pose = ROBOT.fkine(q_curr)
         # Position error
         pos_err = traj[i].t - cur_pose.t
         delta_p = np.linalg.norm(pos_err)
@@ -72,14 +92,14 @@ def resolved_rate_joint_traj(traj, q_start):
         else:
             axis = rot_vec / angle
 
-        while (delta_p > e_p) or (angle > e_o):
+        while (delta_p > E_P) or (angle > E_O):
             vel = get_velocity(pos_err, delta_p, axis, angle)
             
             # Multiply with jacobian inverse for joint speeds
             q_dot = robust_inv(q_curr) @ vel
 
             # Get next joint states using time step
-            q_curr = q_curr + (q_dot * dt)
+            q_curr = q_curr + (q_dot * DT)
 
             # Taking every 0.025 seconds of joint_state information for plotting later
             if step % 25 == 0:
@@ -87,7 +107,7 @@ def resolved_rate_joint_traj(traj, q_start):
             
             step += 1
 
-            cur_pose = robot.fkine(q_curr)
+            cur_pose = ROBOT.fkine(q_curr)
             # Position error
             pos_err = traj[i].t - cur_pose.t
             delta_p = np.linalg.norm(pos_err)
@@ -122,17 +142,27 @@ if __name__ == '__main__':
     config = utils.load_config()
     data = np.load(config['user_input_data'])
 
-    cmd_traj = utils.ndarray_to_se3(data['command_rel_traj'])   # This is an array of SE(3) type poses {waypoints}
+    # Relattive pen poses wrt the Haptic Device base frame
+    cmd_traj = data['command_rel_traj']
     cmd_time = data['command_time'] # {timestamps}
-    q_home = config['UR5_home']
 
-    robot_traj = utils.ndarray_to_se3(data['robot_pose_traj'])
+    q_home = config['UR5_home']
+    T_home = ROBOT.fkine(q_home)
+
+    robot_traj = get_desired_poses( 
+                                    cmd_traj=cmd_traj, 
+                                    home_pose=T_home,
+                                    sf=config['scaling_factor'], 
+                                    haptic_to_viewer=config['haptic_to_viewer'], 
+                                    viewer_to_robotbase=config['viewer_to_robotbase']
+                                    )
+    
     joint_traj = resolved_rate_joint_traj(robot_traj, q_home)
 
     gif_path = 'data_saved/UR5_' + config['name'] + '.gif'
     
     # The below method generates an animation
-    robot.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
+    ROBOT.plot(joint_traj, dt=0.025, block=True, backend='pyplot', movie=gif_path)      # by default, dt=0.05
 
     # save everything
     np.savez(config['user_input_data'],
@@ -144,8 +174,8 @@ if __name__ == '__main__':
             command_abs_traj=data['command_abs_traj'],
             command_rel_traj=data['command_rel_traj'],
             command_time=data['command_time'],
-            robot_pose_traj=data['robot_pose_traj'],
-            # robot joint trajectory processed
+            # robot trajectory processed
+            robot_pose_traj=utils.ndarray_to_se3(robot_traj),
             robot_joint_traj=joint_traj,
             )
     print("File Saved As: ", config['user_input_data'])

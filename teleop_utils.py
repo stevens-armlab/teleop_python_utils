@@ -37,7 +37,7 @@ def load_config():
         viewer_to_robotbase = SE3(SO3())
 
     # Get the robot home joint state
-    q_home = np.radians(np.array(ast.literal_eval(config['General']['joint_states_home'])))
+    q_home = np.radians(np.array(ast.literal_eval(config['Robot']['joint_states_home'])))
 
     # output
     config_data = {
