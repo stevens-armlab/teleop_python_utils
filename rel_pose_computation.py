@@ -100,7 +100,11 @@ if __name__ == '__main__':
             button2=data['button2'], 
             pose_msg=data['pose_msg'], 
             user_input_traj=data['user_input_traj'], 
-            teleop_traj_config=config,
+            # teleop_traj_config data
+            haptic_R_viewer=config['haptic_R_viewer'],
+            viewer_R_robotbase=config['viewer_R_robotbase'],
+            scaling_factor=config['scaling_factor'],
+            command_reference_frame=config['command_reference_frame'],
             # commanded trajectories processed,
             command_abs_traj=utils.se3_to_ndarray(user_input_traj_fltr),
             command_rel_traj=utils.se3_to_ndarray(rel_traj),

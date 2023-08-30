@@ -166,8 +166,9 @@ if __name__ == '__main__':
     gif_path = 'data_saved/follower_robot_' + config['name'] + '.gif'
     
     # The below method generates an animation
-    ROBOT.plot(joint_traj, dt=0.025, block=True, backend='pyplot', movie=gif_path)      # by default, dt=0.05
-
+    input("Press [enter] to display animated trajectory")
+    ROBOT.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
+    
     # save everything
     np.savez(config['user_input_data'],
             # original data already loaded 
@@ -178,6 +179,11 @@ if __name__ == '__main__':
             command_abs_traj=data['command_abs_traj'],
             command_rel_traj=data['command_rel_traj'],
             command_time=data['command_time'],
+            # teleop_traj_config data
+            haptic_R_viewer=config['haptic_R_viewer'],
+            viewer_R_robotbase=config['viewer_R_robotbase'],
+            scaling_factor=config['scaling_factor'],
+            command_reference_frame=config['command_reference_frame'],
             # robot trajectory processed
             robot_pose_traj=utils.ndarray_to_se3(robot_traj),
             robot_joint_traj=joint_traj,
