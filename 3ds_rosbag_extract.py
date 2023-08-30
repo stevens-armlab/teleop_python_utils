@@ -54,7 +54,8 @@ def extract(config):
              button1=np.array(button1_list), 
              button2=np.array(button2_list), 
              pose_msg=np.array(pose_msg_list),
-             user_input_traj=utils.se3_to_ndarray(SE3(user_input_traj)))
+             user_input_traj=utils.se3_to_ndarray(SE3(user_input_traj)),
+             teleop_traj_config=config,)
     print("File Saved As: ", config['user_input_data']) 
     
 if __name__ == '__main__':

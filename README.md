@@ -50,12 +50,12 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
     ```
 3. Set the rotations between viewer and hardware :
     ```
-    haptic_to_viewer = [
+    haptic_R_viewer = [
         [1,0,0],
         [0,0,-1],
         [0,1,0]
         ]
-    viewer_to_robotbase = [
+    viewer_R_robotbase = [
         [1,0,0],
         [0,1,0],
         [0,0,1]

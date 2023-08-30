@@ -31,12 +31,19 @@ def filter_poses_by_time(time_stamps, time_range, user_input_traj):
     relative_time = time_stamps[index_within_range[0]] - time_stamps[index_within_range[0][0]]
     return (user_input_traj[index_within_range[0],:,:],relative_time)
    
-def rel_pose_traj(user_input_traj):
+def rel_pose_traj(user_input_traj,command_reference_frame='fixed_robot_base'):
     """
     Returns the change in the pen's pose wrt the Haptic Device base frame
     """
     start_pose = user_input_traj[0]     # Anchor pose in the haptic device base frame
-    return SE3([pose * start_pose.inv() for pose in user_input_traj])
+    if command_reference_frame=='fixed_robot_base':
+        return SE3([pose * start_pose.inv() for pose in user_input_traj])
+    elif command_reference_frame=='moving_end_effector':
+        return SE3([start_pose.inv()*pose for pose in user_input_traj])
+    else:
+        print(f'Wrong Input for command_reference_frame as {command_reference_frame}')
+        return None
+
 
 if __name__ == '__main__':
     """ 
@@ -93,6 +100,7 @@ if __name__ == '__main__':
             button2=data['button2'], 
             pose_msg=data['pose_msg'], 
             user_input_traj=data['user_input_traj'], 
+            teleop_traj_config=config,
             # commanded trajectories processed,
             command_abs_traj=utils.se3_to_ndarray(user_input_traj_fltr),
             command_rel_traj=utils.se3_to_ndarray(rel_traj),

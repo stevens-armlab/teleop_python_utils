@@ -6,7 +6,7 @@ import roboticstoolbox as rtb
 import ipdb
 from spatialmath import SE3
 from scipy.spatial.transform import Rotation as R
-import yaml
+# import yaml
 
 # LOAD THE ROBOT MODEL
 ROBOT = rtb.models.UR5()
@@ -16,7 +16,7 @@ V_MIN, V_MAX, W_MIN, W_MAX, LMDA, DT = 0.1, 1, 15, 100, 5, 0.001
 # ERROR CONVERGENCE PARAMETERS
 E_P, E_O = 0.001, 0.0524
 
-def get_desired_poses(cmd_traj, home_pose, sf, haptic_to_viewer, viewer_to_robotbase):
+def get_desired_poses(cmd_traj, home_pose, sf, haptic_R_viewer, viewer_R_robotbase):
     """
     Returns the desired robot poses from the commanded trajectory as an ndarray
 
@@ -24,16 +24,20 @@ def get_desired_poses(cmd_traj, home_pose, sf, haptic_to_viewer, viewer_to_robot
     cmd_traj = ndarray type relative trajectory input wrt Haptic Base frame
     home_pose = SE3 type starting pose of robot wrt Robot Base frame
     sf = scaling factor for teleoperation
-    haptic_to_viewer = SE3 type pose/transformation of the viewer frame with reference to the haptic frame
-    viewer_to_robotbase = SE3 type pose/transformation of the Robot Base frame with reference to the viewer frame
+    haptic_R_viewer = SE3 type pose/transformation of the viewer frame with reference to the haptic frame
+    viewer_R_robotbase = SE3 type pose/transformation of the Robot Base frame with reference to the viewer frame
     """
     # The haptic frame with reference to the robot base frame
-    robotbase_to_haptic = viewer_to_robotbase.inv() * haptic_to_viewer.inv()
+    robotbase_R_haptic = viewer_R_robotbase.inv() * haptic_R_viewer.inv()
     # scaling applied to cartesian positions
     cmd_traj[:,0:3,3] *= sf
 
+    # offset first, then change_in_pose
+    # fixed_frame_convention
+    # step 1 -> pose_change_in_robotbase
     # calculate desired robot poses wrt the robot base frame
-    des_poses = [(robotbase_to_haptic * pose * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
+    # des_poses = [(robotbase_R_haptic * pose * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
+    des_poses = [((pose * robotbase_R_haptic) * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
     
     return utils.se3_to_ndarray(SE3(des_poses))
 
@@ -146,20 +150,20 @@ if __name__ == '__main__':
     cmd_traj = data['command_rel_traj']
     cmd_time = data['command_time'] # {timestamps}
 
-    q_home = config['UR5_home']
+    q_home = config['follower_robot_home']
     T_home = ROBOT.fkine(q_home)
 
     robot_traj = get_desired_poses( 
                                     cmd_traj=cmd_traj, 
                                     home_pose=T_home,
                                     sf=config['scaling_factor'], 
-                                    haptic_to_viewer=config['haptic_to_viewer'], 
-                                    viewer_to_robotbase=config['viewer_to_robotbase']
+                                    haptic_R_viewer=config['haptic_R_viewer'], 
+                                    viewer_R_robotbase=config['viewer_R_robotbase']
                                     )
     
     joint_traj = resolved_rate_joint_traj(robot_traj, q_home)
 
-    gif_path = 'data_saved/UR5_' + config['name'] + '.gif'
+    gif_path = 'data_saved/follower_robot_' + config['name'] + '.gif'
     
     # The below method generates an animation
     ROBOT.plot(joint_traj, dt=0.025, block=True, backend='pyplot', movie=gif_path)      # by default, dt=0.05
@@ -181,4 +185,4 @@ if __name__ == '__main__':
     print("File Saved As: ", config['user_input_data'])
 
     # Creates yaml configuration file to use with ROS
-    create_yaml(joint_traj, config['yaml_file_path'])
+    # create_yaml(joint_traj, config['yaml_file_path'])

@@ -24,17 +24,17 @@ def load_config():
     sf = ast.literal_eval(config['General']['scaling_factor'])
 
     # get the viewer perspective frames 
-    haptic_to_viewer = ast.literal_eval(config['General']['haptic_to_viewer'])
+    haptic_R_viewer = ast.literal_eval(config['General']['haptic_R_viewer'])
     try:    # Returns identity SE(3) if the user input rotation is invalid
-        haptic_to_viewer = SE3(SO3(np.array([np.array(i) for i in haptic_to_viewer])))
+        haptic_R_viewer = SE3(SO3(np.array([np.array(i) for i in haptic_R_viewer])))
     except:
-        haptic_to_viewer = SE3(SO3())
+        haptic_R_viewer = SE3(SO3())
 
-    viewer_to_robotbase = ast.literal_eval(config['General']['viewer_to_robotbase'])
+    viewer_R_robotbase = ast.literal_eval(config['General']['viewer_R_robotbase'])
     try:    # Returns identity SE(3) if the user input rotation is invalid
-        viewer_to_robotbase = SE3(SO3(np.array([np.array(i) for i in viewer_to_robotbase])))
+        viewer_R_robotbase = SE3(SO3(np.array([np.array(i) for i in viewer_R_robotbase])))
     except:
-        viewer_to_robotbase = SE3(SO3())
+        viewer_R_robotbase = SE3(SO3())
 
     # Get the robot home joint state
     q_home = np.radians(np.array(ast.literal_eval(config['Robot']['joint_states_home'])))
@@ -45,11 +45,12 @@ def load_config():
         'user_input_rosbag': rosbag_file_path,
         'user_input_data': user_input_data_path,
         'teleop_command_data': teleop_command_data_path,
-        'haptic_to_viewer': haptic_to_viewer,
-        'viewer_to_robotbase': viewer_to_robotbase,        
+        'haptic_R_viewer': haptic_R_viewer,
+        'viewer_R_robotbase': viewer_R_robotbase,        
         'scaling_factor': sf,
-        'UR5_home': q_home,
+        'follower_robot_home': q_home,
         'yaml_file_path': yaml_file_path,
+        'command_reference_frame': config['General']['command_reference_frame']
     }
     return config_data
 
