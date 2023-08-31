@@ -72,9 +72,7 @@ if __name__ == '__main__':
     """
     config = utils.load_config()
     data = np.load(config['user_input_data'])
-
-    button_not_used = data['button1']
-    button_enable = data['button2']
+    button_enable = data[config['enable_button']]
     pose_msg = data['pose_msg']
     user_input_traj = data['user_input_traj']
 

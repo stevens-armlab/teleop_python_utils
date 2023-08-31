@@ -44,6 +44,7 @@ def load_config():
         'name':config_file_name,
         'user_input_rosbag': rosbag_file_path,
         'user_input_data': user_input_data_path,
+        'enable_button' : config['General']['enable_button'],
         'teleop_command_data': teleop_command_data_path,
         'haptic_R_viewer': haptic_R_viewer,
         'viewer_R_robotbase': viewer_R_robotbase,        
