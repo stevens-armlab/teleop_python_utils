@@ -6,7 +6,7 @@ import roboticstoolbox as rtb
 import ipdb
 from spatialmath import SE3
 from scipy.spatial.transform import Rotation as R
-# import yaml
+import yaml
 
 # LOAD THE ROBOT MODEL
 ROBOT = rtb.models.UR5()
@@ -185,10 +185,12 @@ if __name__ == '__main__':
             scaling_factor=config['scaling_factor'],
             command_reference_frame=config['command_reference_frame'],
             # robot trajectory processed
-            robot_pose_traj=utils.ndarray_to_se3(robot_traj),
+            robot_pose_traj=robot_traj,
             robot_joint_traj=joint_traj,
             )
     print("File Saved As: ", config['user_input_data'])
 
-    # Creates yaml configuration file to use with ROS
-    # create_yaml(joint_traj, config['yaml_file_path'])
+    # Plots the comparison between the input trajectory and the robot trajectory
+    utils.plot_haptic_robot_traj(hap_traj=utils.ndarray_to_se3(data['command_abs_traj']),rob_traj=utils.ndarray_to_se3(robot_traj))
+    # Creates yaml configuration file to use with ROS node
+    create_yaml(joint_traj, config['yaml_file_path'])

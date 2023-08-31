@@ -111,3 +111,31 @@ def plot_user_input_traj(abs_traj,rel_traj, skip_N=75):
         )
     plt.show(block=False)
     input(f'User Input Traj displayed')
+
+def plot_haptic_robot_traj(hap_traj,rob_traj, skip_N=75):
+    fig = plt.figure()
+    ax = fig.add_subplot(121, projection='3d')
+    hap_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    hap_traj[-1].plot(frame='end', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    plt.title('User Input (Haptic) Traj')
+    hap_traj_nd = se3_to_ndarray(hap_traj)
+    ax.plot(
+        hap_traj_nd[::skip_N,0,3],
+        hap_traj_nd[::skip_N,1,3],
+        hap_traj_nd[::skip_N,2,3],
+        label='trajectory curve'
+        )
+
+    ax = fig.add_subplot(122, projection='3d')
+    rob_traj[0].plot(frame='st', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    rob_traj[-1].plot(frame='end', style='rgb', axislabel=False, originsize=50, length=0.1, flo=(-0.01,-0.01,-0.01))
+    plt.title('UR5 TCP Traj')
+    rob_traj_nd = se3_to_ndarray(rob_traj)
+    ax.plot(
+        rob_traj_nd[::skip_N,0,3],
+        rob_traj_nd[::skip_N,1,3],
+        rob_traj_nd[::skip_N,2,3],
+        label='trajectory curve'
+        )
+    plt.show(block=False)
+    input(f'Trajectory Comparison displayed')

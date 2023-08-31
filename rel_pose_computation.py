@@ -90,9 +90,7 @@ if __name__ == '__main__':
     user_input_traj_fltr = utils.ndarray_to_se3(user_input_traj_fltr) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
 
     rel_traj = rel_pose_traj(user_input_traj_fltr)
-    """
-    
-    """
+
     # save everything
     np.savez(config['user_input_data'],
             # original data already loaded 
@@ -109,8 +107,8 @@ if __name__ == '__main__':
             command_abs_traj=utils.se3_to_ndarray(user_input_traj_fltr),
             command_rel_traj=utils.se3_to_ndarray(rel_traj),
             command_time=np.array(rel_time),
-            # robot_pose_traj=robot_traj,
             )
+    
     print("File Saved As: ", config['user_input_data'])
 
     # Animation 1: User Input
