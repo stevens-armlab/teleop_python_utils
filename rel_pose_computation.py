@@ -31,7 +31,7 @@ def filter_poses_by_time(time_stamps, time_range, user_input_traj):
     relative_time = time_stamps[index_within_range[0]] - time_stamps[index_within_range[0][0]]
     return (user_input_traj[index_within_range[0],:,:],relative_time)
    
-def rel_pose_traj(user_input_traj,command_reference_frame='fixed_robot_base'):
+def rel_pose_traj(user_input_traj,command_reference_frame='moving_end_effector'):
     """
     Returns the change in the pen's pose wrt the Haptic Device base frame
     """
@@ -87,7 +87,8 @@ if __name__ == '__main__':
 
     user_input_traj_fltr = utils.ndarray_to_se3(user_input_traj_fltr) # this forced conversion using SE3(list of SE3 instances) is necessary to enable user_input_traj.plot() 
 
-    rel_traj = rel_pose_traj(user_input_traj_fltr)
+    rel_traj = rel_pose_traj(user_input_traj=user_input_traj_fltr,
+                             command_reference_frame=config['command_reference_frame'])
 
     # save everything
     np.savez(config['user_input_data'],

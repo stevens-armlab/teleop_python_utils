@@ -4,7 +4,7 @@ import numpy as np
 import teleop_utils as utils
 import roboticstoolbox as rtb
 import ipdb
-from spatialmath import SE3
+from spatialmath import SE3, SO3
 from scipy.spatial.transform import Rotation as R
 import yaml
 
@@ -16,29 +16,26 @@ V_MIN, V_MAX, W_MIN, W_MAX, LMDA, DT = 0.1, 1, 15, 100, 5, 0.001
 # ERROR CONVERGENCE PARAMETERS
 E_P, E_O = 0.001, 0.0524
 
-def get_desired_poses(cmd_traj, home_pose, sf, haptic_R_viewer, viewer_R_robotbase):
+def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_robotbase):
     """
     Returns the desired robot poses from the commanded trajectory as an ndarray
 
     Parameters:
     cmd_traj = ndarray type relative trajectory input wrt Haptic Base frame
-    home_pose = SE3 type starting pose of robot wrt Robot Base frame
+    home_pose = starting pose of robot wrt Robot Base frame
     sf = scaling factor for teleoperation
-    haptic_R_viewer = SE3 type pose/transformation of the viewer frame with reference to the haptic frame
-    viewer_R_robotbase = SE3 type pose/transformation of the Robot Base frame with reference to the viewer frame
+    haptic_R_viewer = the rotation matrix that rewrites a vector written in the viewer base frame to one written in the haptic base frame
+    viewer_R_robotbase = the rotation matrix that rewrites a vector written in the robot base frame to one written in the viewer frame
     """
     # The haptic frame with reference to the robot base frame
+    anch = utils.ndarray_to_se3(cmd)[0]
+    haptic_R_anch = SE3(SO3(anch.R))
     robotbase_R_haptic = viewer_R_robotbase.inv() * haptic_R_viewer.inv()
     # scaling applied to cartesian positions
     cmd_traj[:,0:3,3] *= sf
 
-    # offset first, then change_in_pose
-    # fixed_frame_convention
-    # step 1 -> pose_change_in_robotbase
-    # calculate desired robot poses wrt the robot base frame
-    # des_poses = [(robotbase_R_haptic * pose * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
-    des_poses = [((pose * robotbase_R_haptic) * home_pose) for pose in utils.ndarray_to_se3(cmd_traj)]
-    
+    # moving_end_effector
+    des_poses = [(home_pose * (robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv())) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
     return utils.se3_to_ndarray(SE3(des_poses))
 
 def get_velocity(position_error, position_error_norm, orientation_axis, orientation_error):
@@ -144,9 +141,11 @@ def create_yaml(data_to_convert, file_name):
 if __name__ == '__main__':
     # Load the command data { waypoints, timestamps }
     config = utils.load_config()
-    data = np.load(config['user_input_data'])
+    haptic_R_viewer = SE3(config['haptic_R_viewer'])
+    viewer_R_robotbase = SE3(config['viewer_R_robotbase'])
 
-    # Relattive pen poses wrt the Haptic Device base frame
+    data = np.load(config['user_input_data'])
+    # Relative pen poses wrt the Haptic Device base frame
     cmd_traj = data['command_rel_traj']
     cmd_time = data['command_time'] # {timestamps}
 
@@ -156,7 +155,8 @@ if __name__ == '__main__':
     robot_traj = get_desired_poses( 
                                     cmd_traj=cmd_traj, 
                                     home_pose=T_home,
-                                    sf=config['scaling_factor'], 
+                                    cmd=data['command_abs_traj'],
+                                    sf=1,#config['scaling_factor'], 
                                     haptic_R_viewer=config['haptic_R_viewer'], 
                                     viewer_R_robotbase=config['viewer_R_robotbase']
                                     )
@@ -190,7 +190,11 @@ if __name__ == '__main__':
             )
     print("File Saved As: ", config['user_input_data'])
 
-    # Plots the comparison between the input trajectory and the robot trajectory
-    utils.plot_haptic_robot_traj(hap_traj=utils.ndarray_to_se3(data['command_abs_traj']),rob_traj=utils.ndarray_to_se3(robot_traj))
+    input("Display the input vs robot trajectory: press [Enter]")
+    # Map both the input and robot trajectory to the viewer frame
+    hap_traj = haptic_R_viewer.inv() * utils.ndarray_to_se3(data['command_abs_traj'])
+    rob_traj = viewer_R_robotbase * utils.ndarray_to_se3(robot_traj)
+    # plot the comparison of both
+    utils.plot_haptic_robot_traj(hap_traj=hap_traj,rob_traj=rob_traj)
     # Creates yaml configuration file to use with ROS node
     create_yaml(joint_traj, config['yaml_file_path'])

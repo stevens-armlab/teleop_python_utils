@@ -44,11 +44,15 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
     ```
     rosbag_file_name = 2023-06-29-13-18-02
     ``` 
-2. The scaling factor for teleoperation:
+2. The enabling button of interest: 
+    ```
+    enable_button = button2
+    ``` 
+3. The scaling factor for teleoperation:
     ```
     scaling_factor = 1
     ```
-3. Set the rotations between viewer and hardware :
+4. Set the rotations between viewer and hardware :
     ```
     haptic_R_viewer = [
         [1,0,0],
@@ -62,8 +66,16 @@ To start, one need to make a copy of the example config file ```config/traj1.cfg
         ]
     ```
     Note: If a rotation matrix is invalid, it will default to the identity matrix
-    
-4. The UR5 robot home pose (joint angles in degrees):
+
+5. The reference frame convention (moving or fixed):
+    ```
+    command_reference_frame = moving_end_effector
+    ```
+    Alternatively:
+    ```
+    command_reference_frame = fixed_robot_base
+    ```
+6. The UR5 robot home pose (joint angles in degrees):
     ```
     joint_states_home = [0, -60, 120, -150, -90, 0]
     ```
@@ -91,5 +103,7 @@ python pose_traj_sim.py traj1
 ```
 Then, the script will generate a window where the robot motion is displayed. Wait for the window to close itself, for the animation file to be generated.
 The animation will be saved as ```UR5_traj1.gif```
+
+Another window will display the plots of the haptic input and robot end-effector trajectories in separately. Both trajectories are plotted in the Viewer base frame.
 
 Then, ```traj1.yaml``` will be saved under [data_saved](teleop_python_utils/data_saved), which can be used to load the generated joint state trajectory to a ROS Node as demonstrated [here](https://github.com/stevens-armlab/teleop_core).
