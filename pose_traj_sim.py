@@ -16,7 +16,7 @@ V_MIN, V_MAX, W_MIN, W_MAX, LMDA, DT = 0.1, 1, 15, 100, 5, 0.001
 # ERROR CONVERGENCE PARAMETERS
 E_P, E_O = 0.001, 0.0524
 
-def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_robotbase):
+def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_robotbase, command_reference_frame='fixed_robot_base'):
     """
     Returns the desired robot poses from the commanded trajectory as an ndarray
 
@@ -33,9 +33,14 @@ def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_ro
     robotbase_R_haptic = viewer_R_robotbase.inv() * haptic_R_viewer.inv()
     # scaling applied to cartesian positions
     cmd_traj[:,0:3,3] *= sf
-
-    # moving_end_effector
-    des_poses = [(home_pose * (robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv())) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+    print("Working in " + command_reference_frame + " convention")
+    if command_reference_frame=='fixed_robot_base':
+        des_poses = [((robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv()) * home_pose) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+    elif command_reference_frame=='moving_end_effector':
+        des_poses = [(home_pose * (robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv())) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+    else:
+        print(f'Wrong Input for command_reference_frame as {command_reference_frame}')
+        return None
     return utils.se3_to_ndarray(SE3(des_poses))
 
 def get_velocity(position_error, position_error_norm, orientation_axis, orientation_error):
@@ -78,7 +83,6 @@ def resolved_rate_joint_traj(traj, q_start):
     joint_state_traj.append(q_curr)
 
     while i < len(traj):
-
         cur_pose = ROBOT.fkine(q_curr)
         # Position error
         pos_err = traj[i].t - cur_pose.t
@@ -165,10 +169,6 @@ if __name__ == '__main__':
 
     gif_path = 'data_saved/follower_robot_' + config['name'] + '.gif'
     
-    # The below method generates an animation
-    input("Press [enter] to display animated trajectory")
-    ROBOT.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
-    
     # save everything
     np.savez(config['user_input_data'],
             # original data already loaded 
@@ -189,12 +189,16 @@ if __name__ == '__main__':
             robot_joint_traj=joint_traj,
             )
     print("File Saved As: ", config['user_input_data'])
+    # Creates yaml configuration file to use with ROS node
+    create_yaml(joint_traj, config['yaml_file_path'])
 
-    input("Display the input vs robot trajectory: press [Enter]")
+    input("Display the input vs robot trajectory comparison: press [Enter]")
     # Map both the input and robot trajectory to the viewer frame
     hap_traj = haptic_R_viewer.inv() * utils.ndarray_to_se3(data['command_abs_traj'])
     rob_traj = viewer_R_robotbase * utils.ndarray_to_se3(robot_traj)
     # plot the comparison of both
     utils.plot_haptic_robot_traj(hap_traj=hap_traj,rob_traj=rob_traj)
-    # Creates yaml configuration file to use with ROS node
-    create_yaml(joint_traj, config['yaml_file_path'])
+    
+    # The below method generates an animation
+    input("Press [enter] to display animated trajectory")
+    ROBOT.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
