@@ -160,9 +160,10 @@ if __name__ == '__main__':
                                     cmd_traj=cmd_traj, 
                                     home_pose=T_home,
                                     cmd=data['command_abs_traj'],
-                                    sf=1,#config['scaling_factor'], 
+                                    sf=config['scaling_factor'], 
                                     haptic_R_viewer=config['haptic_R_viewer'], 
-                                    viewer_R_robotbase=config['viewer_R_robotbase']
+                                    viewer_R_robotbase=config['viewer_R_robotbase'],
+                                    command_reference_frame=config['command_reference_frame']
                                     )
     
     joint_traj = resolved_rate_joint_traj(robot_traj, q_home)
