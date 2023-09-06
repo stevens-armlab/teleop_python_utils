@@ -27,17 +27,31 @@ def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_ro
     haptic_R_viewer = the rotation matrix that rewrites a vector written in the viewer base frame to one written in the haptic base frame
     viewer_R_robotbase = the rotation matrix that rewrites a vector written in the robot base frame to one written in the viewer frame
     """
-    # The haptic frame with reference to the robot base frame
-    anch = utils.ndarray_to_se3(cmd)[0]
-    haptic_R_anch = SE3(SO3(anch.R))
-    robotbase_R_haptic = viewer_R_robotbase.inv() * haptic_R_viewer.inv()
+    
     # scaling applied to cartesian positions
     cmd_traj[:,0:3,3] *= sf
     print("Working in " + command_reference_frame + " convention")
-    if command_reference_frame=='fixed_robot_base':
-        des_poses = [((robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv()) * home_pose) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+    
+    haptic_R_robotbase = haptic_R_viewer * viewer_R_robotbase
+    robotbase_R_haptic = haptic_R_robotbase.inv()
+    
+    if command_reference_frame=='fixed_robot_base': 
+        # ----STILL UNDER DEVELOPMENT---- #
+
+        des_poses = [((robotbase_R_haptic * rel_pose * haptic_R_robotbase) * home_pose) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+    
     elif command_reference_frame=='moving_end_effector':
-        des_poses = [(home_pose * (robotbase_R_haptic * rel_pose * robotbase_R_haptic.inv())) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
+
+        # ---- This works --------# 
+
+        anch = utils.ndarray_to_se3(cmd)[0]
+        haptic_R_anch = SE3(SO3(anch.R))
+        anch_R_haptic = haptic_R_anch.inv()
+        robotbase_R_tcp = SE3(SO3(home_pose.R))
+        # For the moving reference frame, we need the end effector reference frames as well
+        anch_R_tcp = anch_R_haptic * haptic_R_robotbase * robotbase_R_tcp
+        tcp_R_anch = anch_R_tcp.inv()
+        des_poses = [(home_pose * (tcp_R_anch * rel_pose * tcp_R_anch.inv())) for rel_pose in utils.ndarray_to_se3(cmd_traj)]
     else:
         print(f'Wrong Input for command_reference_frame as {command_reference_frame}')
         return None
@@ -46,7 +60,7 @@ def get_desired_poses(cmd_traj, home_pose, cmd, sf, haptic_R_viewer, viewer_R_ro
 def get_velocity(position_error, position_error_norm, orientation_axis, orientation_error):
     """
     Returns the task-space velocity vector
-    based on the resolved rate parameters set below
+    abased on the resolved rate parameters set below
     """
     if (position_error_norm/E_P) > LMDA:
         v = V_MAX
@@ -58,7 +72,10 @@ def get_velocity(position_error, position_error_norm, orientation_axis, orientat
     else:
         w = W_MIN + ((W_MAX - W_MIN) * (orientation_error - E_O) / (E_O * (LMDA - 1)))
 
-    p_dot = position_error * (v / position_error_norm)
+    if position_error_norm == 0:
+        p_dot = np.array([0,0,0])
+    else:
+        p_dot = position_error * (v / position_error_norm)
     o_dot = w * orientation_axis
 
     return np.concatenate((p_dot, o_dot), axis=0)
