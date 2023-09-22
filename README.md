@@ -107,3 +107,9 @@ The animation will be saved as ```UR5_traj1.gif```
 Another window will display the plots of the haptic input and robot end-effector trajectories in separately. Both trajectories are plotted in the Viewer base frame.
 
 Then, ```traj1.yaml``` will be saved under [data_saved](teleop_python_utils/data_saved), which can be used to load the generated joint state trajectory to a ROS Node as demonstrated [here](https://github.com/stevens-armlab/teleop_core).
+
+#### 5. [Work In Progress] performance_metrics.py
+
+This script is being worked on to evaluate jacobian-based performance metrics such as manipulabilit, etc.
+
+To be updated soon...
