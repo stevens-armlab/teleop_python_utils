@@ -140,3 +140,16 @@ def plot_haptic_robot_traj(hap_traj,rob_traj, skip_N=75):
         )
     plt.show(block=False)
     input(f'Trajectory Comparison displayed')
+
+def parametrized_plot(y_data, data_title, plt_title):
+    t_data = [i/(len(y_data)-1) for i in range(len(y_data))]
+    plt.plot(t_data, y_data, linestyle='-', color='b', label=data_title)
+
+    plt.xlabel('t')
+    plt.ylabel(data_title)
+    plt.title(plt_title)
+    plt.legend()
+
+    # Display the Plot
+    plt.show(block=False)
+    input(f'Trajectory Comparison displayed')

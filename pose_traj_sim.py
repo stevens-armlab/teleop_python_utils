@@ -98,6 +98,7 @@ def resolved_rate_joint_traj(traj, q_start):
     q_curr = q_start
     joint_state_traj = []
     joint_state_traj.append(q_curr)
+    robot_twist = []
 
     while i < len(traj):
         cur_pose = ROBOT.fkine(q_curr)
@@ -126,6 +127,7 @@ def resolved_rate_joint_traj(traj, q_start):
             # Taking every 0.025 seconds of joint_state information for plotting later
             if step % 25 == 0:
                 joint_state_traj.append(q_curr)
+                robot_twist.append(vel)
             
             step += 1
 
@@ -143,7 +145,8 @@ def resolved_rate_joint_traj(traj, q_start):
             else:
                 axis = rot_vec / angle
         i += 1
-    return np.array(joint_state_traj)
+    robot_twist.append(np.array([0, 0, 0, 0, 0, 0]))
+    return np.array(joint_state_traj), np.array(robot_twist)
 
 def create_yaml(data_to_convert, file_name):
     # Convert the parent ndarray and nested ndarrays to the desired format for YAML
@@ -183,17 +186,16 @@ if __name__ == '__main__':
                                     command_reference_frame=config['command_reference_frame']
                                     )
     
-    joint_traj = resolved_rate_joint_traj(robot_traj, q_home)
-
+    joint_pose_traj, robot_twist_traj = resolved_rate_joint_traj(robot_traj, q_home)
     gif_path = 'data_saved/follower_robot_' + config['name'] + '.gif'
     
     # save everything
     np.savez(config['user_input_data'],
             # original data already loaded 
-            button1=data['button1'], 
-            button2=data['button2'], 
-            pose_msg=data['pose_msg'], 
-            user_input_traj=data['user_input_traj'], 
+            button1=data['button1'],
+            button2=data['button2'],
+            pose_msg=data['pose_msg'],
+            user_input_traj=data['user_input_traj'],
             command_abs_traj=data['command_abs_traj'],
             command_rel_traj=data['command_rel_traj'],
             command_time=data['command_time'],
@@ -204,11 +206,12 @@ if __name__ == '__main__':
             command_reference_frame=config['command_reference_frame'],
             # robot trajectory processed
             robot_pose_traj=robot_traj,
-            robot_joint_traj=joint_traj,
+            robot_joint_traj=joint_pose_traj,
+            robot_twist_traj=robot_twist_traj,
             )
     print("File Saved As: ", config['user_input_data'])
     # Creates yaml configuration file to use with ROS node
-    create_yaml(joint_traj, config['yaml_file_path'])
+    create_yaml(joint_pose_traj, config['yaml_file_path'])
 
     input("Display the input vs robot trajectory comparison: press [Enter]")
     # Map both the input and robot trajectory to the viewer frame
@@ -219,4 +222,4 @@ if __name__ == '__main__':
     
     # The below method generates an animation
     input("Press [enter] to display animated trajectory")
-    ROBOT.plot(joint_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
+    ROBOT.plot(joint_pose_traj, dt=0.025, block=False, backend='pyplot', movie=gif_path)      # by default, dt=0.05
